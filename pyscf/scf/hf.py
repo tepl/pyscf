@@ -1117,12 +1117,36 @@ def mulliken_meta(mol, dm, verbose=logger.DEBUG,
 mulliken_pop_meta_lowdin_ao = mulliken_meta
 
 
-def eig(h, s):
+def eig(h, s, eigensolver):
     '''Solver for generalized eigenvalue problem
 
     .. math:: HC = SCE
     '''
-    e, c = scipy.linalg.eigh(h, s)
+
+    import qae
+
+    print()
+    print('=============================================================')
+    print()
+    print('H:')
+    print(h)
+    print('S:')
+    print(s)
+    print()
+    print(f'Eigensolver: {eigensolver}')
+    print()
+
+    if eigensolver == 'QAE':
+        e, c = qae.solve(h, s,nev=h.shape[0])
+    else:
+        e, c = scipy.linalg.eigh(h, s)
+
+    print('E:')
+    print(e)
+    print('C:')
+    print(c)
+    print()
+
     idx = numpy.argmax(abs(c.real), axis=0)
     c[:,c[idx,numpy.arange(len(e))].real<0] *= -1
     return e, c
@@ -1404,6 +1428,8 @@ class SCF(lib.StreamObject):
     direct_scf_tol = getattr(__config__, 'scf_hf_SCF_direct_scf_tol', 1e-13)
     conv_check = getattr(__config__, 'scf_hf_SCF_conv_check', True)
 
+    eigensolver = 'SciPy'
+
     def __init__(self, mol):
         if not mol._built:
             sys.stderr.write('Warning: %s must be initialized before calling SCF.\n'
@@ -1439,7 +1465,7 @@ class SCF(lib.StreamObject):
         keys = set(('conv_tol', 'conv_tol_grad', 'max_cycle', 'init_guess',
                     'DIIS', 'diis', 'diis_space', 'diis_start_cycle',
                     'diis_file', 'diis_space_rollback', 'damp', 'level_shift',
-                    'direct_scf', 'direct_scf_tol', 'conv_check'))
+                    'direct_scf', 'direct_scf_tol', 'conv_check', 'eigensolver'))
         self._keys = set(self.__dict__.keys()).union(keys)
 
     def build(self, mol=None):
@@ -1485,7 +1511,7 @@ class SCF(lib.StreamObject):
 
 
     def _eigh(self, h, s):
-        return eig(h, s)
+        return eig(h, s, self.eigensolver)
 
     @lib.with_doc(eig.__doc__)
     def eig(self, h, s):
