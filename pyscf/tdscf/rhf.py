@@ -660,6 +660,8 @@ class TDA(lib.StreamObject):
     max_space = getattr(__config__, 'tdscf_rhf_TDA_max_space', 50)
     max_cycle = getattr(__config__, 'tdscf_rhf_TDA_max_cycle', 100)
 
+    eigensolver = 'Davidson'
+
     def __init__(self, mf):
         self.verbose = mf.verbose
         self.stdout = mf.stdout
@@ -677,7 +679,7 @@ class TDA(lib.StreamObject):
         self.xy = None
 
         keys = set(('conv_tol', 'nstates', 'singlet', 'lindep', 'level_shift',
-                    'max_space', 'max_cycle'))
+                    'max_space', 'max_cycle', 'eigensolver'))
         self._keys = set(self.__dict__.keys()).union(keys)
 
     @property
@@ -796,12 +798,44 @@ class TDA(lib.StreamObject):
             idx = numpy.where(w > POSTIVE_EIG_THRESHOLD**2)[0]
             return w[idx], v[:,idx], idx
 
-        self.converged, self.e, x1 = \
-                lib.davidson1(vind, x0, precond,
-                              tol=self.conv_tol,
-                              nroots=nstates, lindep=self.lindep,
-                              max_space=self.max_space, pick=pickeig,
-                              verbose=log)
+        print(f'Eigensolver: {self.eigensolver}')
+
+        if self.eigensolver == 'Davidson':
+
+            self.converged, self.e, x1 = \
+                    lib.davidson1(vind, x0, precond,
+                                  tol=self.conv_tol,
+                                  nroots=nstates, lindep=self.lindep,
+                                  max_space=self.max_space, pick=pickeig,
+                                  verbose=log)
+
+        else:
+
+            asize = len(hdiag)
+            a = numpy.empty([asize, asize])
+            for i in range(asize):
+                v = numpy.zeros(asize)
+                v[i] = 1
+                a[:,i] = vind(v)
+
+            if self.eigensolver == 'QAE':
+                import qae
+                e, c = qae.solve(a,nev=nstates)
+            elif self.eigensolver == 'SciPy':
+                import scipy.linalg
+                e, c = scipy.linalg.eigh(a)
+            else:
+                import sys
+                print('Unknown eigensolver, exiting...')
+                sys.exit(1)
+
+            self.converged = numpy.full((nstates),True)
+            self.e = e[:nstates]
+            x1 = list(c[:,:nstates].T)
+
+#        print(self.converged)
+#        print(self.e)
+#        print(x1)
 
         nocc = (self._scf.mo_occ>0).sum()
         nmo = self._scf.mo_occ.size
