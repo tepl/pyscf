@@ -1125,27 +1125,27 @@ def eig(h, s, eigensolver):
 
     import qae
 
-    print()
-    print('=============================================================')
-    print()
-    print('H:')
-    print(h)
-    print('S:')
-    print(s)
-    print()
-    print(f'Eigensolver: {eigensolver}')
-    print()
+#    print()
+#    print('=============================================================')
+#    print()
+#    print('H:')
+#    print(h)
+#    print('S:')
+#    print(s)
+#    print()
+#    print(f'Eigensolver: {eigensolver}')
+#    print()
 
     if eigensolver == 'QAE':
         e, c = qae.solve(h, s,nev=h.shape[0])
     else:
         e, c = scipy.linalg.eigh(h, s)
 
-    print('E:')
-    print(e)
-    print('C:')
-    print(c)
-    print()
+#    print('E:')
+#    print(e)
+#    print('C:')
+#    print(c)
+#    print()
 
     idx = numpy.argmax(abs(c.real), axis=0)
     c[:,c[idx,numpy.arange(len(e))].real<0] *= -1
