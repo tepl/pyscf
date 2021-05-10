@@ -823,7 +823,7 @@ class TDA(lib.StreamObject):
                 e, c = qae.solve(a,nev=nstates)
             elif self.eigensolver == 'QAE-HW':
                 import qae
-                e, c = qae.solve(a,nev=nstates,slv=qae.Solver.hardware,prf='lanl-dw2000q')
+                e, c = qae.solve(a,nev=nstates,slv=qae.Solver.hardware,prf='lanl-dw2000q',sfn='state.qst')
             elif self.eigensolver == 'SciPy':
                 import scipy.linalg
                 e, c = scipy.linalg.eigh(a)
